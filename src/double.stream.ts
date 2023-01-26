@@ -9,12 +9,12 @@ interface DoubleStreamParams {
   aq: string;
   vq: string;
   info: ytdl.videoInfo;
-  fileName: string;
+  filePath: string;
 }
 
 export const handleDoubleStream = (params: DoubleStreamParams) => {
   return new Promise<void>((resolve, reject) => {
-    const { trackers, aq, vq, info, fileName } = params;
+    const { trackers, aq, vq, info, filePath } = params;
 
     const audioStream = ytdl
       .downloadFromInfo(info, {
@@ -106,7 +106,7 @@ export const handleDoubleStream = (params: DoubleStreamParams) => {
         '-c:v',
         'copy',
         // Define output file
-        fileName,
+        filePath,
         '-y',
       ],
       {

@@ -1,9 +1,14 @@
+#! /usr/bin/env node
+
 import { Trackers } from './@types';
 import cla from 'command-line-args';
-import fs from 'fs';
+import fs from 'node:fs';
 import { handleDoubleStream } from './double.stream';
 import { handleSingleStream } from './single.stream';
+import { linkRegexp } from './link.regexp';
+import { mkdir } from 'fs/promises';
 import { options } from './options';
+import path from 'path';
 import prompt from 'prompt-sync';
 import sf from 'seconds-formater';
 import ytdl from 'ytdl-core';
@@ -12,25 +17,31 @@ const main = async () => {
   return new Promise<void>(async (resolve, reject) => {
     let opts;
     try {
-      opts = cla(options);
+      opts = cla(options, { partial: true });
     } catch (error) {
       console.error(error.message);
       process.exit(1);
     }
 
-    let url: string | undefined = opts.url;
+    let url: string | undefined = process.argv[2];
     let filter: string = opts.filter;
     let vq: string = opts.videoquality;
     let aq: string = opts.audioquality;
+    let outDir: string = opts.outdir;
 
     if (url == undefined) {
       console.error('No url provided');
-      console.log('Provide an url with --url');
+      console.log('Provide an url as a first argument');
       process.exit(1);
     }
     if (url.trim() === '') {
       console.error('Empty url');
-      console.log('Provide an url with --url');
+      console.log('Provide an url as a first argument');
+      process.exit(1);
+    }
+    if (!url.match(linkRegexp)) {
+      console.error('Invalid url');
+      console.log('Provide an url as a first argument');
       process.exit(1);
     }
 
@@ -76,6 +87,8 @@ const main = async () => {
     console.log('dw filter:', filter);
     console.log('video quality:', vq);
     console.log('audio quality:', aq);
+    console.log('out dir:', outDir);
+
     console.log();
 
     const t1 = Date.now();
@@ -99,14 +112,20 @@ const main = async () => {
 
     const sanitizedTitle = title.replace(' ', '-');
     const ext = filterFlag === 1 || filterFlag === 5 ? 'mp3' : 'mp4';
-    let fileName = `${sanitizedTitle}.${ext}`;
+    const fileName = `${sanitizedTitle}.${ext}`;
+    try {
+      await mkdir(outDir, { recursive: true });
+    } catch (error) {
+      reject(error);
+    }
+    let filePath = path.join(outDir, fileName);
 
-    if (fs.existsSync(fileName)) {
+    if (fs.existsSync(filePath)) {
       const confirm = prompt()(
-        `file ${fileName} already exists. Overwrite? Y/n `
+        `${fileName} in outdir already exists. Overwrite? Y/n `
       );
       if (confirm.toLowerCase() !== 'y') {
-        fileName = `${Date.now()}.${fileName}`;
+        filePath = path.join(outDir, `${Date.now()}.${fileName}`);
         console.log('New filename:', fileName);
       } else {
         console.log('overwriting');
@@ -119,7 +138,7 @@ const main = async () => {
       console.log('(this mode will combine streams using ffmpeg)');
       await handleDoubleStream({
         aq,
-        fileName,
+        filePath,
         info,
         trackers,
         vq,
@@ -127,13 +146,15 @@ const main = async () => {
     } else {
       await handleSingleStream({
         aq,
-        fileName,
+        filePath,
         filter: filter as ytdl.Filter,
         info,
       });
     }
 
     const t2 = Date.now();
+    console.log();
+    console.log('file path:', filePath);
     console.log(`done in ${(t2 - t1) / 1000}s`);
   });
 };

@@ -7,12 +7,12 @@ interface SingleStreamParams {
   filter: ytdl.Filter;
   aq: string;
   info: ytdl.videoInfo;
-  fileName: string;
+  filePath: string;
 }
 
 export const handleSingleStream = (params: SingleStreamParams) => {
   return new Promise<void>((resolve, reject) => {
-    const { filter, info, aq, fileName } = params;
+    const { filter, info, aq, filePath } = params;
 
     const bar = new SingleBar({}, Presets.legacy);
     let started = false;
@@ -30,7 +30,7 @@ export const handleSingleStream = (params: SingleStreamParams) => {
         bar.update(downloaded);
       });
 
-    const pipeProc = stream.pipe(fs.createWriteStream(fileName));
+    const pipeProc = stream.pipe(fs.createWriteStream(filePath));
 
     stream.on('finish', () => {
       bar.stop();

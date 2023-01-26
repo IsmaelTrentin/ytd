@@ -1,11 +1,8 @@
 import { OptionDefinition } from 'command-line-args';
+import dwFolders from 'downloads-folder';
+import path from 'path';
 
 export const options: OptionDefinition[] = [
-  {
-    name: 'url',
-    alias: 'u',
-    type: String,
-  },
   {
     name: 'filter',
     alias: 'd',
@@ -23,6 +20,12 @@ export const options: OptionDefinition[] = [
     alias: 'a',
     type: String,
     defaultValue: 'highest',
+  },
+  {
+    name: 'outdir',
+    alias: 'o',
+    type: String,
+    defaultValue: path.join(dwFolders(), 'ytd_downloads'),
   },
   {
     name: 'sample',
